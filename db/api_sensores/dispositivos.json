@@ -1,0 +1,57 @@
+{
+  "data": {
+    "tabla": "dispositivos",
+    "tableData": [
+      {
+        "codigo_interno": "MPE000",
+        "descripcion": null,
+        "id_dispositivo": 80,
+        "id_estado": 5,
+        "id_proyecto": 15
+      },
+      {
+        "codigo_interno": "MPE001",
+        "descripcion": null,
+        "id_dispositivo": 81,
+        "id_estado": 5,
+        "id_proyecto": 15
+      },
+      {
+        "codigo_interno": "MPE002",
+        "descripcion": null,
+        "id_dispositivo": 81,
+        "id_estado": 5,
+        "id_proyecto": 15
+      },
+      {
+        "codigo_interno": "MPE-002",
+        "descripcion": null,
+        "id_dispositivo": 81,
+        "id_estado": 5,
+        "id_proyecto": 15
+      }
+      ,{
+        "codigo_interno": "MPE003",
+        "descripcion": null,
+        "id_dispositivo": 81,
+        "id_estado": 5,
+        "id_proyecto": 15
+      }
+      ,{
+        "codigo_interno": "MPE004",
+        "descripcion": null,
+        "id_dispositivo": 81,
+        "id_estado": 5,
+        "id_proyecto": 15
+      }
+      ,{
+        "codigo_interno": "MPE005",
+        "descripcion": null,
+        "id_dispositivo": 81,
+        "id_estado": 5,
+        "id_proyecto": 15
+      }
+    ]
+  },
+  "status": "success"
+}
