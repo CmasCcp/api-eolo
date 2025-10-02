@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 import pymysql
 import os
 import json
+import requests
 # from dotenv import load_dotenv
 
 # load_dotenv(dotenv_path="/var/www/api-eolo/.env")
@@ -57,44 +58,63 @@ def get_my_devices():
 
 
 # Endpoint GET para obtener un dispositivo por patente
+# @dispositivos_bp.route('/dispositivo', methods=['GET'])
+# def get_device():
+#     # Obtener la patente desde los parámetros de la URL
+#     patente = request.args.get('patente')
+#     # Verificar si se proporcionó la patente
+#     if not patente:
+#         return jsonify({"error": "Falta el parámetro 'patente'"}), 400
+    
+#     # Hacer la petición a la API externa para obtener los dispositivos
+#     # https://api-sensores.cmasccp.cl/listarDatos?tabla=dispositivos&id_proyecto=15
+
+#     # # Verificar si el archivo JSON existe
+#     if os.path.exists(JSON_FILES_API_SENSORES_ROOT + "/dispositivos.json"):
+#         with open(JSON_FILES_API_SENSORES_ROOT + "/dispositivos.json", 'r', encoding='utf-8') as file:
+#             data = json.load(file)  # Leer el archivo JSON
+
+#         # Buscar el dispositivo que tenga la patente proporcionada
+#         device = next((device for device in data["data"]["tableData"] if device['codigo_interno'] == patente), False)
+#         # Si encontramos el dispositivo, devolverlo, de lo contrario, enviar un error
+#         if device:
+#             print("device", device)
+#             device["modelo"] = "Eolo MP Express"
+#             return jsonify(device), 200
+#         else:
+#             return jsonify({"error": "Dispositivo no encontrado"}), 404        
+
+#     else:
+#         return jsonify({"error": "El archivo dispositivos.json no existe", "url": JSON_FILES_API_SENSORES_ROOT + "/dispositivos.json"}), 404
+
 @dispositivos_bp.route('/dispositivo', methods=['GET'])
 def get_device():
-    # Obtener la patente desde los parámetros de la URL
     patente = request.args.get('patente')
-    # Verificar si se proporcionó la patente
     if not patente:
         return jsonify({"error": "Falta el parámetro 'patente'"}), 400
 
-    # # Verificar si el archivo JSON existe
-    # if os.path.exists(JSON_FILES_API_SENSORES_ROOT + "/dispositivos.json"):
-    #     with open(JSON_FILES_API_SENSORES_ROOT + "/dispositivos.json", 'r', encoding='utf-8') as file:
-    #         data = json.load(file)  # Leer el archivo JSON
+    # Consulta la API externa en vez del archivo local
+    try:
+        if patente and patente.upper().startswith("MPE"):
+            api_url = "https://api-sensores.cmasccp.cl/listarDatos?tabla=dispositivos&id_proyecto=15&codigo_interno=" + patente
+            modelo = "Eolo MP Express"
+        else:
+            api_url = "https://api-sensores.cmasccp.cl/listarDatos?tabla=dispositivos&id_proyecto=21&codigo_interno=" + patente
+            modelo = "Eolo MP"
+        response = requests.get(api_url)
 
-    #     # Buscar el dispositivo que tenga la patente proporcionada
-    #     device = next((device for device in data if device['patente'] == patente), None)
+        if response.status_code != 200:
+            return jsonify({"error": "No se pudo consultar la API de sensores"}), 502
 
-    #     # Si encontramos el dispositivo, devolverlo, de lo contrario, enviar un error
-    #     if device:
-    #         return jsonify(device), 200
-    #     else:
-    #         return jsonify({"error": "Dispositivo no encontrado"}), 404
-    # Verificar si el archivo JSON existe
-    if os.path.exists(JSON_FILES_API_SENSORES_ROOT + "/dispositivos.json"):
-        with open(JSON_FILES_API_SENSORES_ROOT + "/dispositivos.json", 'r', encoding='utf-8') as file:
-            data = json.load(file)  # Leer el archivo JSON
-
-        # Buscar el dispositivo que tenga la patente proporcionada
+        data = response.json()
         device = next((device for device in data["data"]["tableData"] if device['codigo_interno'] == patente), False)
-        # Si encontramos el dispositivo, devolverlo, de lo contrario, enviar un error
         if device:
-            print("device", device)
-            device["modelo"] = "Eolo MP Express"
+            device["modelo"] = modelo
             return jsonify(device), 200
         else:
-            return jsonify({"error": "Dispositivo no encontrado"}), 404        
-
-    else:
-        return jsonify({"error": "El archivo dispositivos.json no existe", "url": JSON_FILES_API_SENSORES_ROOT + "/dispositivos.json"}), 404
+            return jsonify({"error": "Dispositivo no encontrado"}), 404
+    except Exception as e:
+        return jsonify({"error": f"Error al consultar la API de sensores: {str(e)}"}), 500
 
 
 # Endpoint GET para obtener un dispositivo por patente

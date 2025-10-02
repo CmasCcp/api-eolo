@@ -16,6 +16,7 @@ JSON_FILES_ROOT = os.getenv("JSON_FILES_ROOT")
 JSON_FILES_API_SENSORES_ROOT = os.getenv("JSON_FILES_API_SENSORES_ROOT")
 JSON_FILES_USER_ROOT = os.getenv("JSON_FILES_USER_ROOT")
 JSON_FILES_SESIONES_JSON = os.getenv("JSON_FILES_SESIONES_JSON")
+API_SENSORES_ROOT = os.getenv("API_SENSORES_ROOT")
 
 
 
@@ -157,56 +158,26 @@ def add_session():
 
             # --- NUEVO: Insertar datos del archivo JSON en la tabla datos ---
             json_path = JSON_FILES_SESIONES_JSON + f"/{new_session['filename']}.json"
-            if os.path.exists(json_path):
-                with open(json_path, 'r', encoding='utf-8') as f:
-                    mediciones = json.load(f)
-                    print("mediciones cargadas")
-
-                    conn = pymysql.connect(
-                        host=os.getenv("MYSQL_HOST"),
-                        user=os.getenv("MYSQL_USER"),
-                        password=os.getenv("MYSQL_PASSWORD"),
-                        database=os.getenv("MYSQL_DATABASE"),
-                        charset='utf8mb4',
-                        cursorclass=pymysql.cursors.DictCursor
-                    )
-
-                    with conn.cursor() as cursor:
-                        sql = """
-                            INSERT INTO datos 
-                            (patente, id_sesion, 
-                            timestamp, temperatura, 
-                            humedad, presion, 
-                            pm2_5, pm10, bateria, 
-                            velocidad, direccion, 
-                            flujo, volumen)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        """
-                        for row in mediciones:
-                            # Extraer los datos de la primera fila para el inicio
-                            timestamp = datetime.utcfromtimestamp(row.get('timestamp')).strftime('%Y-%m-%dT%H:%M:%S')
-                            cursor.execute(sql, (
-                                new_session['patente'],
-                                str(id_sesion),
-                                str(timestamp),
-                                row.get('temperatura_valor'),
-                                row.get('humedad_valor'),
-                                row.get('presion_valor'),
-                                row.get('pm2.5_valor'),
-                                row.get('pm10_valor'),
-                                row.get('bateria_valor'),
-                                row.get('velocidad_valor'),
-                                row.get('direccion_valor'),
-                                row.get('flujo_valor'),
-                                row.get('volumen_valor')
-                            ))
-
-                        print("guardando mediciones")
-
-                    conn.commit()
-
-        except Exception as db_err:
-            print("Error al guardar sesión en MySQL:", db_err)
+            # if os.path.exists(json_path):
+            #     with open(json_path, 'r', encoding='utf-8') as jf:
+            #         j = json.load(jf)
+            #     # Si el JSON es una lista, iterar sus elementos; si es un dict buscar clave 'files' o contar como un solo elemento
+            #     if isinstance(j, list):
+            #         items = j
+            #     elif isinstance(j, dict) and 'files' in j and isinstance(j['files'], list):
+            #         items = j['files']
+            #     else:
+            #         items = [j]
+            #     for _ in items:
+            #         print("nueva fila")
+            # else:
+            #     print(f"El archivo {json_path} no existe")
+            # url = f"https://api-sensores.cmasccp.cl/insertarMedicionV2?codigoInterno={patente}&idsSensorTipo=37,37,6,6,6,6,6,8,8,8,38,38,38,27,4,13,13,13,13,13&idsVariables=5,17,3,6,7,8,9,3,6,13,48,49,50,3,4,11,12,15,45,46&valores={Velocidad del viento [m/s]},{Dirección del Viento [Grados]},{Grados celcius [°C]},{Humedad [%]},{Material particulado PM 1.0 [µg/m³]},{Material particulado PM 2.5 [µg/m³]},{Material particulado PM 10 [µg/m³]},{Grados celcius [°C]},{Humedad [%]},{Presión atmosférica [kPa]},{Flujo de captura configurado [L/min]},{Volumen capturado [m3]},{Flujo de captura observado [L/min]},{Grados celcius [°C]},{Voltaje [V]},{Latitud [°]},{Longitud [°]},{Intensidad señal telefónica [Adimensional]},{Velocidad_km/h [km/h]},{Satelites [int]}"
+            res = get_sensores_from_json(json_path, API_SENSORES_ROOT + "/insertarMedicionV2")
+            print(res)
+            # if os.path.exists(json_path):
+        except Exception as e:
+            return jsonify({"error": f"Hubo un problema al guardar la sesión en la base de datos: {str(e)}"}), 500                
 
 
         return jsonify({"message": "Sesión agregada exitosamente"}), 201
@@ -214,5 +185,63 @@ def add_session():
     except Exception as e:
         return jsonify({"error": f"Hubo un problema al agregar la sesión: {str(e)}"}), 500
 
+            # Utilidad para hacer petición GET a la API de sensores usando los datos de un JSON
+def get_sensores_from_json(json_path, api_url):
+            """
+            Lee un archivo JSON y realiza una petición GET a la API de sensores
+            usando los datos del JSON como parámetros.
+            """
+            if not os.path.exists(json_path):
+                return {"error": f"El archivo {json_path} no existe"}
+            try:
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                # Si el JSON es una lista, usa el primer elemento
+                if isinstance(data, list):
+                    params = data[0]
+                else:
+                    params = data
+                # Construir la query string
+                # query_string = "&".join([f"{key}={value}" for key, value in params.items()])
 
+                patente=params.get("patente","unknown")
 
+                rows = data if isinstance(data, list) else [data]
+                for idx, row in enumerate(rows, start=1):
+                    # row_patente = row.get("patente", patente)
+                    # lat = row.get("lat", "")
+                    # lon = row.get("lon", "")
+                    # filename = row.get("filename", "")
+                    # volumen = row.get("volumen", "")
+                    # flujo = row.get("flujo", "")
+                    # bateria = row.get("bateria", "")
+                    # fecha_inicial = row.get("fecha_inicial", "")
+                    # fecha_final = row.get("fecha_final", "")
+                    # velocidad = row.get("velocidad", "")
+                    # direccion=
+                    # temperatura
+                    # humedad
+                    # pm1
+                    # pm2_5
+                    # pm10
+                    # temperatura_2
+                    # humedad_2
+                    # presion
+                    # flujo_captura_configurado
+                    # volumen_capturado
+                    # flujo_captura_observado
+                    # Grados
+                    # ,{Humedad [%]},{Presión atmosférica [kPa]},{Flujo de captura configurado [L/min]},{Volumen capturado [m3]},{Flujo de captura observado [L/min]},{Grados celcius [°C]},{Voltaje [V]},{Latitud [°]},{Longitud [°]},{Intensidad señal telefónica [Adimensional]},{Velocidad_km/h [km/h]},{Satelites [int]}
+
+                    print(row)
+
+                    # url = f"https://api-sensores.cmasccp.cl/insertarMedicionV2?codigoInterno={patente}&idsSensorTipo=37,37,6,6,6,6,6,8,8,8,38,38,38,27,4,13,13,13,13,13&idsVariables=5,17,3,6,7,8,9,3,6,13,48,49,50,3,4,11,12,15,45,46&valores={"velocidad"},{Dirección del Viento [Grados]},{Grados celcius [°C]},{Humedad [%]},{Material particulado PM 1.0 [µg/m³]},{Material particulado PM 2.5 [µg/m³]},{Material particulado PM 10 [µg/m³]},{Grados celcius [°C]},{Humedad [%]},{Presión atmosférica [kPa]},{Flujo de captura configurado [L/min]},{Volumen capturado [m3]},{Flujo de captura observado [L/min]},{Grados celcius [°C]},{Voltaje [V]},{Latitud [°]},{Longitud [°]},{Intensidad señal telefónica [Adimensional]},{Velocidad_km/h [km/h]},{Satelites [int]}"
+
+                # url = f"{api_url}?{query_string}"
+                print(f"Haciendo petición a: {"url"}")
+                headers = {'User-Agent': 'EOLO/1.0 (dkressing@udd.cl)'}
+                # response = requests.get(url, headers=headers)
+                # return response.json()
+                return {"message": f"Simulated request to {"url"}"}
+            except Exception as e:
+                return {"error": str(e)}
