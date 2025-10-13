@@ -21,7 +21,7 @@ app = Flask(__name__)
 # Habilitar CORS para permitir cualquier origen con configuración específica
 CORS(app, resources={
     r"/*": {
-        "origins": ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174", "http://localhost:3000", "https://eolo.cmasccp.cl", "http://eolo.cmasccp.cl"],
+        "origins": ["http://localhost:5173","http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174", "http://localhost:3000", "https://eolo.cmasccp.cl", "http://eolo.cmasccp.cl"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "expose_headers": ["Content-Range", "X-Content-Range"],

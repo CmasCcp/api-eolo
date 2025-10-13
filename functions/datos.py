@@ -5,6 +5,7 @@ from datetime import datetime
 import io
 import pandas as pd
 from flask import send_file
+import json
 # from dotenv import load_dotenv
 
 # load_dotenv(dotenv_path="/var/www/api-eolo/.env")
@@ -45,8 +46,46 @@ def get_datos():
     id_sesion = request.args.get('id_sesion')
     patente = request.args.get('patente')
     formato = request.args.get('formato')
+    filename = request.args.get('filename')
+
+    print("filename:", filename)
     if not id_sesion and not patente:
         return jsonify({"error": "Falta el id_sesion o patente"}), 400
+    
+    # Si se recibe filename, buscar los JSON locales
+    if filename:
+        json_dir = os.getenv("JSON_FILES_SESIONES_JSON")
+        filenames = [f.strip() for f in filename.split(',')]
+        datos_json = []
+        for fname in filenames:
+            json_path = f"{json_dir}/{fname}.json"
+            print(json_path)
+            if os.path.exists(json_path):
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    datos = json.load(f)
+                    for row in datos:
+                        try:
+                            row['timestamp_formated'] = datetime.utcfromtimestamp(row.get('timestamp')).strftime('%Y-%m-%dT%H:%M:%S')
+                        except Exception:
+                            row['timestamp_formated'] = None
+                    datos_json.extend(datos)
+        if datos_json:
+            # Si el formato es xlsx, devolver archivo Excel
+            if formato and formato.lower() == "xlsx":
+                df = pd.DataFrame(datos_json)
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    df.to_excel(writer, index=False)
+                output.seek(0)
+                filename_out = f"datos_{id_sesion or patente}.xlsx"
+                return send_file(
+                    output,
+                    mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    as_attachment=True,
+                    download_name=filename_out
+                )
+            return jsonify(datos_json), 200
+
     try:
         connection = pymysql.connect(
             host=os.getenv("MYSQL_HOST"),
